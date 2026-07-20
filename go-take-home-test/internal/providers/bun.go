@@ -27,20 +27,16 @@ var writeMu sync.RWMutex
 
 type dbRepository struct {
 	db   *bun.DB
-	opts models.MigrationOptions
+	opts *models.MigrationOptions
 }
 
 // NewDBRepository opens the SQLite database and applies pending SQL migrations.
-func NewDBRepository(path string, opts ...models.MigrationOption) (repositories.DBRepository, error) {
-	options := models.MigrationOptions{
-		VersionFilePath: "./migration_version.txt",
-		MigrationsPath:  "./internal/migrations",
-	}
-	for _, opt := range opts {
-		opt(&options)
+func NewDBRepository(path string, opts *models.MigrationOptions) (repositories.DBRepository, error) {
+	if opts == nil {
+		return nil, fmt.Errorf("migration options are required")
 	}
 
-	repo := &dbRepository{opts: options}
+	repo := &dbRepository{opts: opts}
 
 	db, err := repo.newBunDb(path)
 	if err != nil {

@@ -6,18 +6,26 @@ type MigrationOptions struct {
 	MigrationsPath  string
 }
 
+func NewMigrationOptions(inputOptions ...MigrationOption) *MigrationOptions {
+	opts := &MigrationOptions{}
+	for _, opt := range inputOptions {
+		opt(opts)
+	}
+	return opts
+}
+
 // MigrationOption is a functional option for configuring MigrationOptions
 type MigrationOption func(*MigrationOptions)
 
-// WithVersionFilePath sets the path to the version file
-func WithVersionFilePath(path string) MigrationOption {
+// MigrationWithVersionFilePath sets the path to the version file
+func MigrationWithVersionFilePath(path string) MigrationOption {
 	return func(opts *MigrationOptions) {
 		opts.VersionFilePath = path
 	}
 }
 
-// WithMigrationsPath sets the path to the migrations directory
-func WithMigrationsPath(path string) MigrationOption {
+// MigrationWithMigrationsPath sets the path to the migrations directory
+func MigrationWithMigrationsPath(path string) MigrationOption {
 	return func(opts *MigrationOptions) {
 		opts.MigrationsPath = path
 	}
