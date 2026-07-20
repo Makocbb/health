@@ -1,83 +1,110 @@
 package app
 
 import (
+	"fmt"
+	"time"
+
+	"go-take-home-test/internal/controllers"
 	"go-take-home-test/internal/models"
 	"go-take-home-test/internal/providers"
 	"go-take-home-test/internal/services"
-	"log"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// appConfig is the configuration for the application.
-// Normally I would put it elsewhere, but given the scope of the task,
-// I will just keep it here. Its going to be convenient to do quick edits.
-type appConfig struct {
-	dbPath          string
-	migrationsPath  string
-	versionFilePath string
-	baseURL         string
+// Config holds application wiring options.
+type Config struct {
+	DBPath             string
+	MigrationsPath     string
+	VersionFilePath    string
+	BaseURL            string
+	QueueMaxAttempts   int
+	QueueInitialBackoff time.Duration
 }
 
-var defaultAppConfig = appConfig{
-	dbPath:          "./data/db.sqlite",
-	migrationsPath:  "./internal/migrations",
-	versionFilePath: "./migration_version.txt",
-	baseURL:         "http://localhost:8080",
+var defaultConfig = Config{
+	DBPath:              "./data/db.sqlite",
+	MigrationsPath:      "./internal/migrations",
+	VersionFilePath:     "./migration_version.txt",
+	BaseURL:             "http://localhost:8080",
+	QueueMaxAttempts:    3,
+	QueueInitialBackoff: time.Second,
 }
 
-// New builds the Echo application with the starter /ingest route.
+// New builds the Echo application with default config.
 func New() *echo.Echo {
-	// Options
+	e, err := NewWithConfig(defaultConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to create app: %w", err))
+	}
+	return e
+}
+
+// NewWithConfig builds the Echo application with the provided config.
+func NewWithConfig(cfg Config) (*echo.Echo, error) {
+	if cfg.DBPath == "" {
+		cfg.DBPath = defaultConfig.DBPath
+	}
+	if cfg.MigrationsPath == "" {
+		cfg.MigrationsPath = defaultConfig.MigrationsPath
+	}
+	if cfg.VersionFilePath == "" {
+		cfg.VersionFilePath = defaultConfig.VersionFilePath
+	}
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = defaultConfig.BaseURL
+	}
+	if cfg.QueueMaxAttempts <= 0 {
+		cfg.QueueMaxAttempts = defaultConfig.QueueMaxAttempts
+	}
+	if cfg.QueueInitialBackoff <= 0 {
+		cfg.QueueInitialBackoff = defaultConfig.QueueInitialBackoff
+	}
+
 	migrationOpts := models.NewMigrationOptions(
-		models.MigrationWithVersionFilePath(defaultAppConfig.versionFilePath),
-		models.MigrationWithMigrationsPath(defaultAppConfig.migrationsPath),
+		models.MigrationWithVersionFilePath(cfg.VersionFilePath),
+		models.MigrationWithMigrationsPath(cfg.MigrationsPath),
 	)
 	queueOpts := models.NewQueueOptions(
-		models.QueueWithBaseURL(defaultAppConfig.baseURL),
+		models.QueueWithBaseURL(cfg.BaseURL),
+		models.QueueWithMaxAttempts(cfg.QueueMaxAttempts),
+		models.QueueWithInitialBackoff(cfg.QueueInitialBackoff),
 	)
 
-	// Repositories
-	dbRepository, err := providers.NewDBRepository(defaultAppConfig.dbPath, migrationOpts)
+	dbRepository, err := providers.NewDBRepository(cfg.DBPath, migrationOpts)
 	if err != nil {
-		log.Fatalf("failed to create db repository: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to create db repository: %w", err)
 	}
 
 	db := dbRepository.GetDB()
 
-	var (
-		// database repositories
-		ingestedFormRepository    = providers.NewIngestedFormRepository(db)
-		transformedFormRepository = providers.NewTransformedFormRepository(db)
-		transformLogRepository    = providers.NewTransformLogRepository(db)
+	ingestedFormRepository := providers.NewIngestedFormRepository(db)
+	transformedFormRepository := providers.NewTransformedFormRepository(db)
+	transformLogRepository := providers.NewTransformLogRepository(db)
+	queueRepository := providers.NewQueueRepository(queueOpts)
+	emailRepository := providers.NewEmailRepository()
+	postcodeRepository := providers.NewPostcodeRepository()
 
-		// queue repository
-		queueRepository = providers.NewQueueRepository(queueOpts)
-	)
-
-	// Services
-	var (
-		// data services
-		ingestedFormService    = services.NewIngestedFormService(ingestedFormRepository)
-		transformedFormService = services.NewTransformedFormService(transformedFormRepository)
-		transformLogService    = services.NewTransformLogService(transformLogRepository)
-
-		// queue service
-		queueService = services.NewQueueService(queueRepository)
-	)
+	ingestedFormService := services.NewIngestedFormService(ingestedFormRepository)
+	transformedFormService := services.NewTransformedFormService(transformedFormRepository)
+	transformLogService := services.NewTransformLogService(transformLogRepository)
+	queueService := services.NewQueueService(queueRepository)
+	emailService := services.NewEmailService(emailRepository)
+	postcodeService := services.NewPostcodeService(postcodeRepository)
 
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Recover())
-	e.POST("/ingest", ingest)
-	return e
-}
 
-func ingest(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Ingesting form data",
-	})
+	controllers.NewWorkerController(
+		ingestedFormService,
+		transformedFormService,
+		transformLogService,
+		queueService,
+		postcodeService,
+		emailService,
+	).Routes(e.Group("/workers"))
+
+	return e, nil
 }

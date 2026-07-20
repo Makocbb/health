@@ -13,18 +13,20 @@ type TransformedForm struct {
 	CreatedAt time.Time `json:"created_at" bun:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" bun:"updated_at"`
 
-	SessionID            string            `json:"sessionId" bun:"session_id"`
-	ApplicationReference string            `json:"applicationReference" bun:"application_reference"`
-	FirstName            string            `json:"firstName" bun:"first_name"`
-	LastName             string            `json:"lastName" bun:"last_name"`
+	SentToBot bool `json:"sent_to_bot" bun:"sent_to_bot"`
+
+	SessionID            string            `json:"session_id" bun:"session_id"`
+	ApplicationReference string            `json:"application_reference" bun:"application_reference"`
+	FirstName            string            `json:"first_name" bun:"first_name"`
+	LastName             string            `json:"last_name" bun:"last_name"`
 	Email                string            `json:"email" bun:"email"`
-	Gender               TransformedGender `json:"gender" bun:"gender,type:jsonb"`
-	DateOfBirth          time.Time         `json:"dateOfBirth" bun:"date_of_birth,type:jsonb"`
-	PhoneNumber          *string           `json:"phoneNumber" bun:"phone_number"`
-	MobileNumber         string            `json:"mobileNumber" bun:"mobile_number"`
-	AddressLine1         string            `json:"addressLine1" bun:"address_line_1"`
-	AddressLine2         string            `json:"addressLine2" bun:"address_line_2"`
-	AddressLine3         *string           `json:"addressLine3" bun:"address_line_3"`
+	Gender               TransformedGender `json:"gender" bun:"gender"`
+	DateOfBirth          time.Time         `json:"date_of_birth" bun:"date_of_birth"`
+	PhoneNumber          *string           `json:"phone_number" bun:"phone_number"`
+	MobileNumber         string            `json:"mobile_number" bun:"mobile_number"`
+	AddressLine1         string            `json:"address_line_1" bun:"address_line_1"`
+	AddressLine2         string            `json:"address_line_2" bun:"address_line_2"`
+	AddressLine3         *string           `json:"address_line_3" bun:"address_line_3"`
 	Postcode             string            `json:"postcode" bun:"postcode"`
 	Country              string            `json:"country" bun:"country"`
 	Longitude            float64           `json:"longitude" bun:"longitude"`

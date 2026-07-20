@@ -5,7 +5,11 @@ import (
 	"time"
 )
 
-type TransformedForm struct {
+type TransformRequest struct {
+	IngestedID int64 `json:"ingested_id"`
+}
+
+type TransformedFormBotRequest struct {
 	SessionID            string                   `json:"sessionId" bun:"session_id"`
 	ApplicationReference string                   `json:"applicationReference" bun:"application_reference"`
 	FirstName            string                   `json:"firstName" bun:"first_name"`
@@ -24,8 +28,8 @@ type TransformedForm struct {
 	Latitude             float64                  `json:"latitude" bun:"latitude"`
 }
 
-func FromModel(model *models.TransformedForm) *TransformedForm {
-	return &TransformedForm{
+func TransformedFromModel(model *models.TransformedForm) *TransformedFormBotRequest {
+	return &TransformedFormBotRequest{
 		SessionID:            model.SessionID,
 		ApplicationReference: model.ApplicationReference,
 		FirstName:            model.FirstName,
@@ -43,4 +47,8 @@ func FromModel(model *models.TransformedForm) *TransformedForm {
 		Longitude:            model.Longitude,
 		Latitude:             model.Latitude,
 	}
+}
+
+type SendToBotRequest struct {
+	TransformedID int64 `json:"transformed_id"`
 }

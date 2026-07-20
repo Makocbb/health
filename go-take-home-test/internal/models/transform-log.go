@@ -14,6 +14,7 @@ type TransformLog struct {
 
 	Success bool   `json:"success" bun:"success"`
 	Error   string `json:"message" bun:"message"`
+	Status  string `json:"status" bun:"status"`
 
 	TransformedFormID int64 `json:"transformed_form_id" bun:"transformed_form_id"`
 }
@@ -23,3 +24,7 @@ type TransformLogParams struct {
 	PerPage int   `json:"per_page"`
 	Success *bool `json:"success"`
 }
+
+var TransformStatusSuccess = "success"
+var TransformStatusFailed = "failed"
+var TransformStatusPending = "pending"
