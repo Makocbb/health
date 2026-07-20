@@ -34,3 +34,12 @@ CREATE TABLE IF NOT EXISTS transformed_forms (
     longitude REAL NOT NULL,
     latitude REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS transform_logs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    success INTEGER NOT NULL,
+    message TEXT
+    transformed_form_id INTEGER NOT NULL,
+);

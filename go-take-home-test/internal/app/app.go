@@ -46,10 +46,13 @@ func New() *echo.Echo {
 		return nil
 	}
 
+	db := dbRepository.GetDB()
+
 	var (
 		// database repositories
-		ingestedFormRepository    = providers.NewIngestedFormRepository(dbRepository.GetDB())
-		transformedFormRepository = providers.NewTransformedFormRepository(dbRepository.GetDB())
+		ingestedFormRepository    = providers.NewIngestedFormRepository(db)
+		transformedFormRepository = providers.NewTransformedFormRepository(db)
+		transformLogRepository    = providers.NewTransformLogRepository(db)
 
 		// queue repository
 		queueRepository = providers.NewQueueRepository(queueOpts)
@@ -60,6 +63,7 @@ func New() *echo.Echo {
 		// data services
 		ingestedFormService    = services.NewIngestedFormService(ingestedFormRepository)
 		transformedFormService = services.NewTransformedFormService(transformedFormRepository)
+		transformLogService    = services.NewTransformLogService(transformLogRepository)
 
 		// queue service
 		queueService = services.NewQueueService(queueRepository)
