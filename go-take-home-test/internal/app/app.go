@@ -15,11 +15,11 @@ import (
 
 // Config holds application wiring options.
 type Config struct {
-	DBPath             string
-	MigrationsPath     string
-	VersionFilePath    string
-	BaseURL            string
-	QueueMaxAttempts   int
+	DBPath              string
+	MigrationsPath      string
+	VersionFilePath     string
+	BaseURL             string
+	QueueMaxAttempts    int
 	QueueInitialBackoff time.Duration
 }
 
@@ -97,14 +97,16 @@ func NewWithConfig(cfg Config) (*echo.Echo, error) {
 	e.HideBanner = true
 	e.Use(middleware.Recover())
 
-	controllers.NewWorkerController(
+	workerCtl := controllers.NewWorkerController(
 		ingestedFormService,
 		transformedFormService,
 		transformLogService,
 		queueService,
 		postcodeService,
 		emailService,
-	).Routes(e.Group("/workers"))
+	)
+	workerCtl.Routes(e.Group("/workers"))
+	workerCtl.PublicRoutes(e)
 
 	return e, nil
 }

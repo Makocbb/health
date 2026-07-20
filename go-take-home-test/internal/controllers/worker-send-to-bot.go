@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
-	"go-take-home-test/internal/models"
-	"go-take-home-test/internal/presenters"
 	"log/slog"
 	"net/http"
+
+	"go-take-home-test/internal/models"
+	"go-take-home-test/internal/presenters"
 
 	"github.com/labstack/echo/v4"
 )
@@ -25,6 +26,11 @@ func (ctl *workerController) SendToBot(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
+	// Never give the FORM-BOT the same form twice.
+	if transformedForm.SentToBot {
+		return c.JSON(http.StatusOK, map[string]any{"status": "already_sent"})
+	}
+
 	body, err := json.Marshal(presenters.TransformedFromModel(transformedForm))
 	if err != nil {
 		slog.Error("failed to marshal transformed form", "error", err)
@@ -41,9 +47,9 @@ func (ctl *workerController) SendToBot(c echo.Context) error {
 	}
 
 	err = ctl.emailSrv.SendEmail(ctx, models.EmailRequest{
-		From:    "source@mock.com",
-		To:      "destination@mock.com",
-		Subject: "form-bot",
+		From:    "noreply@healthtech-1.local",
+		To:      "happyforms@bots.com",
+		Subject: "form ingested",
 		Body:    body,
 	})
 	if err == nil {
@@ -59,7 +65,7 @@ func (ctl *workerController) SendToBot(c echo.Context) error {
 	} else {
 		transformLog.Status = models.TransformStatusFailed
 		transformLog.Error = err.Error()
-		if _, logError := ctl.transformLogSrv.Patch(ctx, transformLog, "status", "error", "message"); logError != nil {
+		if _, logError := ctl.transformLogSrv.Patch(ctx, transformLog, "status", "message"); logError != nil {
 			slog.Error("failed to patch transform log", "error", logError)
 		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})

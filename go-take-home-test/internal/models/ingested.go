@@ -7,8 +7,16 @@ import (
 )
 
 var (
-	ErrIngestedFormNotFound = fmt.Errorf("ingested form not found")
-	ErrInvalidDateOfBirth   = fmt.Errorf("invalid date of birth")
+	ErrIngestedFormNotFound  = fmt.Errorf("ingested form not found")
+	ErrIngestedFormDuplicate = fmt.Errorf("ingested form already exists")
+	ErrInvalidDateOfBirth    = fmt.Errorf("invalid date of birth")
+	ErrInvalidIngestedForm   = fmt.Errorf("invalid ingested form")
+)
+
+const (
+	IngestedStatusPending     = "pending"
+	IngestedStatusTransformed = "transformed"
+	IngestedStatusFailed      = "failed"
 )
 
 // IngestedForm is the schema currently agreed with the external provider.
@@ -16,6 +24,10 @@ type IngestedForm struct {
 	ID        int64     `json:"id" bun:"id,pk,autoincrement"`
 	CreatedAt time.Time `json:"created_at" bun:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" bun:"updated_at"`
+
+	Status string `json:"status" bun:"status"`
+
+	Fingerprint string `json:"fingerprint" bun:"fingerprint"`
 
 	SessionID            string          `json:"session_id" bun:"session_id"`
 	ApplicationReference string          `json:"application_reference" bun:"application_reference"`
@@ -63,6 +75,7 @@ func (i *IngestedForm) ToTransformedForm() (*TransformedForm, error) {
 	firstName, lastName := splitName(i.Name)
 
 	form := &TransformedForm{
+		IngestedFormID:       i.ID,
 		SessionID:            i.SessionID,
 		ApplicationReference: i.ApplicationReference,
 		FirstName:            firstName,
@@ -105,4 +118,44 @@ func splitName(name string) (firstName, lastName string) {
 	default:
 		return parts[0], strings.Join(parts[1:], " ")
 	}
+}
+
+// Validate checks required fields against the currently agreed ingest schema.
+// Extra JSON fields are ignored by encoding/json (tolerant of provider drift).
+func (i *IngestedForm) Validate() error {
+	switch {
+	case strings.TrimSpace(i.SessionID) == "":
+		return fmt.Errorf("%w: session_id is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.ApplicationReference) == "":
+		return fmt.Errorf("%w: application_reference is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Name) == "":
+		return fmt.Errorf("%w: name is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Email) == "":
+		return fmt.Errorf("%w: email is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(string(i.Gender)) == "":
+		return fmt.Errorf("%w: gender is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.DateOfBirth) == "":
+		return fmt.Errorf("%w: date_of_birth is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.MobileNumber) == "":
+		return fmt.Errorf("%w: mobile_number is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Address.AddressLine1) == "":
+		return fmt.Errorf("%w: address.address_line_1 is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Address.AddressLine2) == "":
+		return fmt.Errorf("%w: address.address_line_2 is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Address.Postcode) == "":
+		return fmt.Errorf("%w: address.postcode is required", ErrInvalidIngestedForm)
+	case strings.TrimSpace(i.Address.Country) == "":
+		return fmt.Errorf("%w: address.country is required", ErrInvalidIngestedForm)
+	}
+
+	switch i.Gender {
+	case IngestedGenderMale, IngestedGenderFemale, IngestedGenderOther:
+	default:
+		return fmt.Errorf("%w: gender must be male, female, or other", ErrInvalidIngestedForm)
+	}
+
+	if _, err := time.Parse("2006-01-02", i.DateOfBirth); err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidDateOfBirth, i.DateOfBirth)
+	}
+	return nil
 }

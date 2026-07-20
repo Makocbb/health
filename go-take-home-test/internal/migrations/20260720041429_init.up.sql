@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS ingested_forms (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    fingerprint TEXT NOT NULL UNIQUE,
     session_id TEXT NOT NULL,
     application_reference TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -18,6 +20,7 @@ CREATE TABLE IF NOT EXISTS transformed_forms (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     sent_to_bot BOOLEAN NOT NULL DEFAULT FALSE,
+    ingested_form_id INTEGER NOT NULL UNIQUE,
     session_id TEXT NOT NULL,
     application_reference TEXT NOT NULL,
     first_name TEXT NOT NULL,
@@ -33,7 +36,8 @@ CREATE TABLE IF NOT EXISTS transformed_forms (
     postcode TEXT NOT NULL,
     country TEXT NOT NULL,
     longitude REAL NOT NULL,
-    latitude REAL NOT NULL
+    latitude REAL NOT NULL,
+    FOREIGN KEY (ingested_form_id) REFERENCES ingested_forms(id)
 );
 
 CREATE TABLE IF NOT EXISTS transform_logs (
@@ -43,5 +47,6 @@ CREATE TABLE IF NOT EXISTS transform_logs (
     success INTEGER NOT NULL,
     status TEXT NOT NULL,
     message TEXT,
-    transformed_form_id INTEGER NOT NULL
+    transformed_form_id INTEGER NOT NULL,
+    FOREIGN KEY (transformed_form_id) REFERENCES transformed_forms(id)
 );

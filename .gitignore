@@ -1,1 +1,4 @@
 .DS_Store
+go-take-home-test/data
+go-take-home-test/data/db.sqlite
+go-take-home-test/migration_version.txt

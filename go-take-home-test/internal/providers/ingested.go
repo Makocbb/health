@@ -48,6 +48,38 @@ func (r *ingestedFormRepository) FindByID(ctx context.Context, id int64) (*model
 	return data, nil
 }
 
+func (r *ingestedFormRepository) FindBySessionID(ctx context.Context, sessionID string) (*models.IngestedForm, error) {
+	writeMu.RLock()
+	defer writeMu.RUnlock()
+
+	data := new(models.IngestedForm)
+	err := r.db.NewSelect().Model(data).Where("session_id = ?", sessionID).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrIngestedFormNotFound
+		}
+		slog.Error("failed to find ingested form by session_id", "error", err, "session_id", sessionID)
+		return nil, err
+	}
+	return data, nil
+}
+
+func (r *ingestedFormRepository) FindByFingerprint(ctx context.Context, fingerprint string) (*models.IngestedForm, error) {
+	writeMu.RLock()
+	defer writeMu.RUnlock()
+
+	data := new(models.IngestedForm)
+	err := r.db.NewSelect().Model(data).Where("fingerprint = ?", fingerprint).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrIngestedFormNotFound
+		}
+		slog.Error("failed to find ingested form by fingerprint", "error", err, "fingerprint", fingerprint)
+		return nil, err
+	}
+	return data, nil
+}
+
 func (r *ingestedFormRepository) FindAll(ctx context.Context, params *models.IngestedFormParams) (int, []models.IngestedForm, error) {
 	writeMu.RLock()
 	defer writeMu.RUnlock()

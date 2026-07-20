@@ -9,6 +9,15 @@ type TransformRequest struct {
 	IngestedID int64 `json:"ingested_id"`
 }
 
+type RetryRequest struct {
+	IngestedID int64  `json:"ingested_id"`
+	SessionID  string `json:"session_id"`
+}
+
+type SendToBotRequest struct {
+	TransformedID int64 `json:"transformed_id"`
+}
+
 type TransformedFormBotRequest struct {
 	SessionID            string                   `json:"sessionId" bun:"session_id"`
 	ApplicationReference string                   `json:"applicationReference" bun:"application_reference"`
@@ -49,6 +58,3 @@ func TransformedFromModel(model *models.TransformedForm) *TransformedFormBotRequ
 	}
 }
 
-type SendToBotRequest struct {
-	TransformedID int64 `json:"transformed_id"`
-}

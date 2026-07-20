@@ -15,6 +15,7 @@ type TransformedForm struct {
 
 	SentToBot bool `json:"sent_to_bot" bun:"sent_to_bot"`
 
+	IngestedFormID       int64             `json:"ingested_form_id" bun:"ingested_form_id"`
 	SessionID            string            `json:"session_id" bun:"session_id"`
 	ApplicationReference string            `json:"application_reference" bun:"application_reference"`
 	FirstName            string            `json:"first_name" bun:"first_name"`

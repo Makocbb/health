@@ -1,18 +1,24 @@
 package presenters
 
-import "go-take-home-test/internal/models"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+
+	"go-take-home-test/internal/models"
+)
 
 // IngestedForm is the schema currently agreed with the external provider.
 type IngestedForm struct {
-	SessionID            string          `json:"session_id" bun:"session_id"`
-	ApplicationReference string          `json:"application_reference" bun:"application_reference"`
-	Name                 string          `json:"name" bun:"name"`
-	Email                string          `json:"email" bun:"email"`
-	Gender               IngestedGender  `json:"gender" bun:"gender,type:jsonb"`
-	DateOfBirth          string          `json:"date_of_birth" bun:"date_of_birth"`
-	PhoneNumber          *string         `json:"phone_number" bun:"phone_number"`
-	MobileNumber         string          `json:"mobile_number" bun:"mobile_number"`
-	Address              IngestedAddress `json:"address" bun:"address,type:jsonb"`
+	SessionID            string          `json:"session_id"`
+	ApplicationReference string          `json:"application_reference"`
+	Name                 string          `json:"name"`
+	Email                string          `json:"email"`
+	Gender               IngestedGender  `json:"gender"`
+	DateOfBirth          string          `json:"date_of_birth"`
+	PhoneNumber          *string         `json:"phone_number"`
+	MobileNumber         string          `json:"mobile_number"`
+	Address              IngestedAddress `json:"address"`
 }
 
 type IngestedGender string
@@ -31,8 +37,23 @@ type IngestedAddress struct {
 	Country      string  `json:"country"`
 }
 
-func (i *IngestedForm) ToModel() *models.IngestedForm {
+// Fingerprint returns a stable hash of the entire ingest payload contents.
+func (i *IngestedForm) Fingerprint() (string, error) {
+	payload, err := json.Marshal(i)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(payload)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func (i *IngestedForm) ToModel() (*models.IngestedForm, error) {
+	fp, err := i.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
 	return &models.IngestedForm{
+		Fingerprint:          fp,
 		SessionID:            i.SessionID,
 		ApplicationReference: i.ApplicationReference,
 		Name:                 i.Name,
@@ -48,5 +69,5 @@ func (i *IngestedForm) ToModel() *models.IngestedForm {
 			Postcode:     i.Address.Postcode,
 			Country:      i.Address.Country,
 		},
-	}
+	}, nil
 }

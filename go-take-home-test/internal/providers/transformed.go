@@ -48,6 +48,38 @@ func (r *transformedFormRepository) FindByID(ctx context.Context, id int64) (*mo
 	return data, nil
 }
 
+func (r *transformedFormRepository) FindBySessionID(ctx context.Context, sessionID string) (*models.TransformedForm, error) {
+	writeMu.RLock()
+	defer writeMu.RUnlock()
+
+	data := new(models.TransformedForm)
+	err := r.db.NewSelect().Model(data).Where("session_id = ?", sessionID).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrTransformedFormNotFound
+		}
+		slog.Error("failed to find transformed form by session_id", "error", err, "session_id", sessionID)
+		return nil, err
+	}
+	return data, nil
+}
+
+func (r *transformedFormRepository) FindByIngestedFormID(ctx context.Context, ingestedFormID int64) (*models.TransformedForm, error) {
+	writeMu.RLock()
+	defer writeMu.RUnlock()
+
+	data := new(models.TransformedForm)
+	err := r.db.NewSelect().Model(data).Where("ingested_form_id = ?", ingestedFormID).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrTransformedFormNotFound
+		}
+		slog.Error("failed to find transformed form by ingested_form_id", "error", err, "ingested_form_id", ingestedFormID)
+		return nil, err
+	}
+	return data, nil
+}
+
 func (r *transformedFormRepository) FindAll(ctx context.Context, params *models.TransformedFormParams) (int, []models.TransformedForm, error) {
 	writeMu.RLock()
 	defer writeMu.RUnlock()

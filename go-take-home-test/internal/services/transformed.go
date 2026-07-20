@@ -15,6 +15,7 @@ type transformedFormService struct {
 type TransformedFormService interface {
 	Create(ctx context.Context, form *models.TransformedForm) (*models.TransformedForm, error)
 	GetByID(ctx context.Context, id int64) (*models.TransformedForm, error)
+	GetByIngestedFormID(ctx context.Context, ingestedFormID int64) (*models.TransformedForm, error)
 	GetAll(ctx context.Context, params *models.TransformedFormParams) (int, []models.TransformedForm, error)
 	Patch(ctx context.Context, form *models.TransformedForm, columns ...string) (*models.TransformedForm, error)
 	Update(ctx context.Context, form *models.TransformedForm) (*models.TransformedForm, error)
@@ -34,6 +35,10 @@ func (s *transformedFormService) Create(ctx context.Context, form *models.Transf
 
 func (s *transformedFormService) GetByID(ctx context.Context, id int64) (*models.TransformedForm, error) {
 	return s.repo.FindByID(ctx, id)
+}
+
+func (s *transformedFormService) GetByIngestedFormID(ctx context.Context, ingestedFormID int64) (*models.TransformedForm, error) {
+	return s.repo.FindByIngestedFormID(ctx, ingestedFormID)
 }
 
 func (s *transformedFormService) GetAll(ctx context.Context, params *models.TransformedFormParams) (int, []models.TransformedForm, error) {
